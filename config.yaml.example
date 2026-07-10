@@ -1,0 +1,8 @@
+zhihu_user_ids:
+  - "博主id"
+  - "博主id"
+feishu_webhook_url: ""
+monitor_interval: 30
+storage_file: monitored_items.json
+user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+zhihu_cookie: "zhihu cookie 建议几天更新一次"
