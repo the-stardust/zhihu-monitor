@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -23,7 +23,7 @@ func SendFeishuNotification(webhookURL, title, content, link string) bool {
 	}
 	payload.Content.Text = "<at user_id=\"ou_24885417697cf3ee51ad2c6a9a5eee76\"></at>【" + title + "】\n\n" + content + "\n\n🔗 查看链接：" + link
 
-	fmt.Println("link", payload.Content.Text)
+	log.Println("发送飞书通知:", payload.Content.Text)
 	_, err := client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(payload).

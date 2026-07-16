@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -115,7 +116,7 @@ func FetchUserAnswers(userID, userAgent, cookie string, limit int) ([]ContentIte
 		if err != nil {
 			lastErr = err
 			if attempt < maxRetries {
-				fmt.Printf("获取回答列表失败(第%d次): %v, 2秒后重试...\n", attempt, err)
+				log.Printf("获取回答列表失败(第%d次): %v, 2秒后重试...\n", attempt, err)
 				time.Sleep(2 * time.Second)
 			}
 			continue
@@ -128,7 +129,9 @@ func FetchUserAnswers(userID, userAgent, cookie string, limit int) ([]ContentIte
 		}
 
 		var items []ContentItem
+		log.Println("获取回答结果：", len(response.Data))
 		for _, raw := range response.Data {
+			log.Println("content", raw.Question.Title)
 			items = append(items, ContentItem{
 				ID:          fmt.Sprintf("%s", raw.ID),
 				Type:        "answer",
@@ -145,13 +148,13 @@ func FetchUserAnswers(userID, userAgent, cookie string, limit int) ([]ContentIte
 		}
 
 		if attempt < maxRetries {
-			fmt.Printf("获取回答数量不足(第%d次): 期望%d条, 实际%d条, 2秒后重试...\n", attempt, limit, len(items))
+			log.Printf("获取回答数量不足(第%d次): 期望%d条, 实际%d条, 2秒后重试...\n", attempt, limit, len(items))
 			time.Sleep(2 * time.Second)
 		}
 	}
 
 	if lastItems != nil {
-		fmt.Printf("重试%d次后获取到%d条回答\n", maxRetries, len(lastItems))
+		log.Printf("重试%d次后获取到%d条回答\n", maxRetries, len(lastItems))
 		return lastItems, nil
 	}
 	return nil, lastErr
@@ -179,7 +182,7 @@ func FetchUserPins(userID, userAgent string, limit int) ([]ContentItem, error) {
 		if err != nil {
 			lastErr = err
 			if attempt < maxRetries {
-				fmt.Printf("获取想法列表失败(第%d次): %v, 2秒后重试...\n", attempt, err)
+				log.Printf("获取想法列表失败(第%d次): %v, 2秒后重试...\n", attempt, err)
 				time.Sleep(2 * time.Second)
 			}
 			continue
@@ -191,14 +194,14 @@ func FetchUserPins(userID, userAgent string, limit int) ([]ContentItem, error) {
 			continue
 		}
 
-		fmt.Println("获取想法结果：", len(response.Data))
+		log.Println("获取想法结果：", len(response.Data))
 		var items []ContentItem
 		for _, raw := range response.Data {
 			if len(raw.Content) == 0 {
 				continue
 			}
 			content := raw.Content[0]
-			fmt.Println("content", content)
+			log.Println("content", content)
 			items = append(items, ContentItem{
 				ID:          fmt.Sprintf("%s", raw.ID),
 				Type:        "pin",
@@ -216,13 +219,13 @@ func FetchUserPins(userID, userAgent string, limit int) ([]ContentItem, error) {
 		}
 
 		if attempt < maxRetries {
-			fmt.Printf("获取想法数量不足(第%d次): 期望%d条, 实际%d条, 2秒后重试...\n", attempt, limit, len(items))
+			log.Printf("获取想法数量不足(第%d次): 期望%d条, 实际%d条, 2秒后重试...\n", attempt, limit, len(items))
 			time.Sleep(2 * time.Second)
 		}
 	}
 
 	if lastItems != nil {
-		fmt.Printf("重试%d次后获取到%d条想法\n", maxRetries, len(lastItems))
+		log.Printf("重试%d次后获取到%d条想法\n", maxRetries, len(lastItems))
 		return lastItems, nil
 	}
 	return nil, lastErr

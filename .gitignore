@@ -3,3 +3,4 @@ logs
 config.yaml
 monitored_items.json
 zhihu-monitor
+nohup.out

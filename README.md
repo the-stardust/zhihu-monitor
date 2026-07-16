@@ -52,6 +52,36 @@ user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 go run main.go
 ```
 
+### 测试模式
+
+测试模式仅执行一次检查，不启动定时器，会将新内容打印到终端但不发送飞书通知：
+
+```bash
+go run main.go test
+```
+
+### 后台运行
+
+```bash
+# 编译
+go build -o zhihu-monitor
+
+# 后台启动（日志文件由程序自动管理，无需手动重定向）
+nohup ./zhihu-monitor &
+
+# 查看实时日志
+tail -f logs/app_$(date +%Y%m%d).log
+```
+
+## 日志说明
+
+程序启动后会在 `logs/` 目录下自动生成日志文件，文件名为 `app_YYYYMMDD.log`（如 `app_20260716.log`）。
+
+- **每日轮转** — 每天自动生成新的日志文件，跨天时无缝切换
+- **双写输出** — 日志同时输出到终端和当天文件，方便调试
+- **自动清理** — 每次启动时自动清理 5 天前的旧日志，避免磁盘占用过大
+- **日志格式** — `2009/01/23 01:23:23 消息内容`（标准 Go log 格式）
+
 ## 编译程序
 
 ```bash
@@ -69,7 +99,9 @@ go build -o zhihu-monitor
 ├── utils/
 │   ├── zhihu.go         # 知乎API相关函数
 │   ├── feishu.go        # 飞书通知相关函数
-│   └── storage.go       # 持久化存储相关函数
+│   ├── storage.go       # 持久化存储相关函数
+│   └── logger.go        # 日志系统（每日轮转+自动清理）
+├── logs/                 # 日志文件目录（自动生成，保留最近5天）
 └── monitored_items.json # 已监控内容记录（自动生成）
 ```
 
