@@ -69,6 +69,20 @@ type Question struct {
 	ID           string `json:"id"`
 }
 
+type ArticleResp struct {
+	Paging interface{}   `json:"paging"`
+	Data   []ArticleData `json:"data"`
+}
+
+type ArticleData struct {
+	Created   int64  `json:"created"`
+	ID        string `json:"id"`
+	URL       string `json:"url"`
+	Type      string `json:"type"`
+	Title     string `json:"title"`
+	Excerpt   string `json:"excerpt"`
+}
+
 const maxRetries = 3
 
 func FetchUserInfo(userID, userAgent string) (*UserInfo, error) {
@@ -226,6 +240,73 @@ func FetchUserPins(userID, userAgent string, limit int) ([]ContentItem, error) {
 
 	if lastItems != nil {
 		log.Printf("重试%d次后获取到%d条想法\n", maxRetries, len(lastItems))
+		return lastItems, nil
+	}
+	return nil, lastErr
+}
+
+func FetchUserArticles(userID, userAgent, cookie string, limit int) ([]ContentItem, error) {
+	client := resty.New()
+	client.SetTimeout(10 * time.Second)
+
+	url := fmt.Sprintf("https://www.zhihu.com/api/v4/members/%s/articles", userID)
+
+	var lastItems []ContentItem
+	var lastErr error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		resp, err := client.R().
+			SetHeader("User-Agent", userAgent).
+			SetHeader("Accept", "application/json, text/plain, */*").
+			SetHeader("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8").
+			SetHeader("Referer", "https://www.zhihu.com/").
+			SetHeader("Cookie", cookie).
+			SetQueryParam("limit", fmt.Sprintf("%d", limit)).
+			Get(url)
+
+		if err != nil {
+			lastErr = err
+			if attempt < maxRetries {
+				log.Printf("获取文章列表失败(第%d次): %v, 2秒后重试...\n", attempt, err)
+				time.Sleep(2 * time.Second)
+			}
+			continue
+		}
+
+		var response ArticleResp
+		if err := json.Unmarshal(resp.Body(), &response); err != nil {
+			lastErr = err
+			continue
+		}
+
+		log.Println("获取文章结果：", len(response.Data))
+		var items []ContentItem
+		for _, raw := range response.Data {
+			log.Println("content", raw.Title)
+			items = append(items, ContentItem{
+				ID:          fmt.Sprintf("%s", raw.ID),
+				Type:        "article",
+				TypeLabel:   "文章",
+				Title:       raw.Title,
+				Excerpt:     raw.Excerpt,
+				CreatedTime: raw.Created,
+				URL:         fmt.Sprintf("https://zhuanlan.zhihu.com/p/%s", raw.ID),
+			})
+		}
+		lastItems = items
+
+		if len(items) >= limit {
+			return items, nil
+		}
+
+		if attempt < maxRetries {
+			log.Printf("获取文章数量不足(第%d次): 期望%d条, 实际%d条, 2秒后重试...\n", attempt, limit, len(items))
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	if lastItems != nil {
+		log.Printf("重试%d次后获取到%d条文章\n", maxRetries, len(lastItems))
 		return lastItems, nil
 	}
 	return nil, lastErr
